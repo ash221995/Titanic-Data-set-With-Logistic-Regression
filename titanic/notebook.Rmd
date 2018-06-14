@@ -1,0 +1,126 @@
+---
+title: "Titanic data set with logistic Regression"
+output: html_notebook
+---
+
+Read the data from secondary Storage
+```{r}
+#get the working dir.
+getwd()
+#read CSV trainig data
+train <- read.csv("/home/ashok/Desktop/titanic/train .csv")
+head(train)
+#summary of training data-set
+summary(train)
+```
+Training data set Information:-
+
+Obeservations =891 
+Features =12
+
+Age has NA(missing) values.
+
+```{r}
+test <- read.csv("/home/ashok/Desktop/titanic/test .csv")
+PassengerId=test$PassengerId
+head(test)
+summary(test)
+```
+Testing data set Information:-
+
+Obeservations =418 
+Features =12
+
+Fare and Age has NA(missing) values.
+
+Treatment for missing values
+
+```{r}
+hist(train$Age)
+train$Age[is.na(train$Age)] = 29.07
+test$Age[is.na(test$Age)] = 29.07
+test$Fare[is.na(test$Fare)] = 35.627
+```
+
+```{r}
+summary(train)
+summary(test)
+```
+
+
+```{r}
+train$Sex = ifelse(train$Sex=="female", 1, 0)
+test$Sex = ifelse(test$Sex=="female", 1, 0)
+```
+```{r}
+train$embarked_c = ifelse(train$Embarked=="C", 1, 0)
+test$embarked_c = ifelse(test$Embarked=="C", 1, 0)
+
+train$embarked_s = ifelse(train$Embarked=="S", 1, 0)
+test$embarked_s = ifelse(test$Embarked=="S", 1, 0)
+```
+
+Select features from test and train data set
+```{r}
+head(train)
+train = train[-c(1, 4, 9,11,12)]
+head(test)
+test = test[-c(3, 8,10,11)]
+```
+
+Detect and remove the outliers from Age column using boxplot 
+```{r}
+
+boxplot(train$Age)
+train$Age = ifelse(train$Age>=52, 52, train$Age)
+train$Age = ifelse(train$Age<=4, 4, train$Age)
+test$Age = ifelse(test$Age>=52, 52, test$Age)
+test$Age = ifelse(test$Age<=4, 4, test$Age)
+boxplot(test$Age)
+```
+Detect and remove the outliers from Fare column using boxplot 
+
+```{r}
+boxplot(train$Fare)
+train$Fare = ifelse(train$Fare>=136, 136, train$Fare)
+test$Fare = ifelse(test$Fare>=136, 136, test$Fare)
+```
+Linear Regression model
+
+```{r}
+#import the "car" package
+library(car)
+#buliding the linear regression model
+model <- lm(Survived~., data=train)
+```
+
+Logistic Regression model
+
+```{r}
+#Calculate the variance-infection for linear regression model
+t = vif(model)
+sort(t, decreasing=TRUE)
+
+#buliding the model using logistic regression
+model1<- glm(as.factor(Survived)~., family="binomial", data=train)
+
+#summery of model
+summary(model1)
+```
+Prediction
+
+```{r}
+# prediction
+test$score <- predict(model1, newdata = test, type="response")
+head(test$score)
+
+#Using the threshold value is 0.56
+test$Survived <- ifelse(test$score>=0.56, 1, 0)
+head(test)
+df=test[c(1,11)]
+head(df)
+
+#Write into CSV file
+write.csv(df,file = "df.csv",row.names = FALSE)
+
+```
